@@ -71,6 +71,8 @@ void draw_cross(SDL_Renderer* renderer, SDL_Point* position) {
 
 
 int8_t check_board_state(int8_t* board, int8_t new_position) {
+  // Note: checking only the rows/columns/diagonals that have been updated allows us to omit checking for triplets of 0
+  
   // Calculations turn out this way because `board` follows row-major order
   int y = new_position / 3;
   int x = new_position % 3;
@@ -83,9 +85,7 @@ int8_t check_board_state(int8_t* board, int8_t new_position) {
   }
   
   // Return if a vertical triplet is found
-  if (vertical_match != -1) {
-    return (Player) vertical_match;
-  } else return -1;
+  if (vertical_match != -1) return (Player) vertical_match;
 
   // Check horizontally
   int8_t horizontal_match = board[3 * y]; 
@@ -94,9 +94,35 @@ int8_t check_board_state(int8_t* board, int8_t new_position) {
   }
 
   // Return if a horizontal triplet is found
-  if (horizontal_match != -1) {
-    return (Player) horizontal_match;
-  } else return -1;
+  if (horizontal_match != -1) return (Player) horizontal_match;
+
+  // Check diagonally (0-indexed row-major `new_position` modulo 2 gives the pattern we are looking for; draw it)
+  // Also equivalent to binary operation `new_position & 1`
+  if (new_position % 2 == 0) {
+    int8_t diagonal_match = board[2];
+    
+    // Top-right to bottom-left
+    if (new_position % 2 == 0 && new_position % 8 != 0) {
+      for (int i = 4; i <= 3 * 2; i += 2) {
+        if (diagonal_match != board[i]) diagonal_match = -1;
+        printf("diagonal_match: %d, board[i]: %d\n", diagonal_match, board[i]);
+      }
+      if (diagonal_match != -1) return (Player) diagonal_match;
+    }
+    
+    // Top-left to bottom-right
+    if (new_position % 4 == 0) {
+      diagonal_match = board[0];
+      for (int i = 4; i < 3 * 4; i += 4) {
+        printf("%d\n",i);
+        if (diagonal_match != board[i]) diagonal_match = -1;    
+      }
+      if (diagonal_match != -1) return (Player) diagonal_match;
+    }
+  }
+
+  // No triplets found
+  return -1;
 }
 
 
