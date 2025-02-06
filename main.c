@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <SDL_ttf.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -18,6 +19,8 @@
 #define BLUE 0, 0, 255
 #define GRAY 230, 230, 230
 #define WHITE 255, 255, 255
+
+#define FONT "/Library/Fonts/Arial Unicode.ttf"
 
 
 // Players, "x" and "o"
@@ -77,7 +80,6 @@ int8_t check_board_state(int8_t* board, int8_t new_position) {
   int y = new_position / 3;
   int x = new_position % 3;
   
-  printf("x: %d, y: %d\n", x, y);
   // Check vertically
   int8_t vertical_match = board[x];
   for (int i = 1; i < 3; ++i) {
@@ -105,7 +107,6 @@ int8_t check_board_state(int8_t* board, int8_t new_position) {
     if (new_position % 2 == 0 && new_position % 8 != 0) {
       for (int i = 4; i <= 3 * 2; i += 2) {
         if (diagonal_match != board[i]) diagonal_match = -1;
-        printf("diagonal_match: %d, board[i]: %d\n", diagonal_match, board[i]);
       }
       if (diagonal_match != -1) return (Player) diagonal_match;
     }
@@ -114,7 +115,6 @@ int8_t check_board_state(int8_t* board, int8_t new_position) {
     if (new_position % 4 == 0) {
       diagonal_match = board[0];
       for (int i = 4; i < 3 * 4; i += 4) {
-        printf("%d\n",i);
         if (diagonal_match != board[i]) diagonal_match = -1;    
       }
       if (diagonal_match != -1) return (Player) diagonal_match;
@@ -169,6 +169,50 @@ void move(SDL_Renderer* renderer, int8_t* board, Player player, uint8_t position
   }
 }
 
+void render_text(SDL_Renderer* renderer, TTF_Font* font, const char *text, SDL_Point point) {
+  int w = 0;
+  int h = 0;
+  int padding = 8;
+
+  TTF_SizeText(font, text, &w, &h);
+
+  SDL_Color font_color = {.r = 255, .g = 255, .b =255, .a = 255};
+  SDL_Surface *surface = TTF_RenderText_Solid(font, text, font_color);
+
+  SDL_Rect rect = {
+    .x = point.x - (w / 2),
+    .y = point.y - (h / 2),
+    .w = w,
+    .h = h,
+  };
+
+  SDL_Rect text_background = {
+    .x = rect.x - padding,
+    .y = rect.y - padding,
+    .w = rect.w + padding * 2,
+    .h = rect.h + padding * 2
+  };
+
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderFillRect(renderer, &text_background);
+
+  
+  SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+  SDL_RenderDrawRect(renderer, &text_background);
+  
+  // render text
+  SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+  // clean
+  SDL_FreeSurface(surface);
+  SDL_DestroyTexture(texture);
+}
+
+void render_caption(SDL_Renderer* renderer, TTF_Font* font, const char* text) {
+  render_text(renderer, font, text, (SDL_Point){ .x = 200, .y = 500});
+}
 
 int main() {
   SDL_Window* window;
@@ -182,8 +226,8 @@ int main() {
     SDL_RENDERER_ACCELERATED
   );
 
-  printf("works");
-  fflush(stdout);
+  TTF_Init();
+  TTF_Font* font = TTF_OpenFont(FONT, 20);
 
   SDL_Event event;
   int running = 1;
@@ -195,6 +239,9 @@ int main() {
   BoardState state;
   state = Playing;
 
+  // Idk who goes first
+  Player turn = Cross;
+
   while (running && !state) {
 
     // redraw background for next frame
@@ -203,6 +250,16 @@ int main() {
 
     // redraw gameboard
     draw_gameboard(renderer, board);
+
+    // display turn
+    switch (turn) {
+      case Circle:
+        render_caption(renderer, font, "Player Cross");
+        break;
+      case Cross:
+        render_caption(renderer, font, "Player Circle");
+        break;
+    }
 
     // present the rendered frame
     SDL_RenderPresent(renderer);
@@ -216,20 +273,33 @@ int main() {
         SDL_GetGlobalMouseState(&mouse_x, &mouse_y);
         int8_t i = position_on_board(mouse_x, mouse_y);
         switch (event.button.button) {
-          case SDL_BUTTON_LEFT: {
-            move(renderer, board, Cross, i);
-            if (check_board_state(board, i) != -1) state = Won;
+          case SDL_BUTTON_LEFT:
+            if (turn == Cross) {
+              move(renderer, board, Cross, i);
+              if (check_board_state(board, i) != -1) state = Won;
+              turn = Circle;
+              render_caption(renderer, font, "Player Circle");
+              printf("Circle turn");
+              fflush(stdout);
+            }
             break;
-          }
           case SDL_BUTTON_RIGHT:
-            move(renderer, board, Circle, i);
-            if (check_board_state(board, i) != -1) state = Won;
+            if (turn == Circle) {
+              move(renderer, board, Circle, i);
+              if (check_board_state(board, i) != -1) state = Won;
+              turn = Cross;
+              printf("Cross turn");
+              fflush(stdout);
+            }
             break;
         }
       }
     }
+    
   }
 
+  TTF_CloseFont(font);
+  TTF_Quit();
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
