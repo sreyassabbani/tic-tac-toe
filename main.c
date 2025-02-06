@@ -1,6 +1,8 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
+
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #define SCREEN_WIDTH_PX 400
@@ -174,11 +176,13 @@ int8_t position_on_board(int mouse_x, int mouse_y) {
 }
 
 
-void move(SDL_Renderer* renderer, uint8_t* board, uint8_t* moves_left, Player player, uint8_t position) {
+bool move(SDL_Renderer* renderer, uint8_t* board, uint8_t* moves_left, Player player, uint8_t position) {
   if (board[position] == 0) {
     board[position] = player;
+    --*moves_left;
+    return true;
   }
-  --*moves_left;
+  return false;
 }
 
 void render_text(SDL_Renderer* renderer, TTF_Font* font, const char *text, SDL_Point point) {
@@ -303,21 +307,23 @@ int main() {
         switch (event.button.button) {
           case SDL_BUTTON_LEFT:
             if (game.turn == Red) {
-              move(renderer, game.board, &game.moves_left, Red, i);
-              update_game_state(&game, i);
-              game.turn = Blue;
-              render_caption(renderer, font, "Player Blue");
-              printf("Blue turn\n");
-              fflush(stdout);
+              if (move(renderer, game.board, &game.moves_left, Red, i)) {
+                update_game_state(&game, i);
+                game.turn = Blue;
+                render_caption(renderer, font, "Player Blue");
+                printf("Blue turn\n");
+                fflush(stdout);
+              }
             }
             break;
           case SDL_BUTTON_RIGHT:
             if (game.turn == Blue) {
-              move(renderer, game.board, &game.moves_left, Blue, i);
-              update_game_state(&game, i);
-              game.turn = Red;
-              printf("Red turn\n");
-              fflush(stdout);
+              if (move(renderer, game.board, &game.moves_left, Blue, i)) {
+                update_game_state(&game, i);
+                game.turn = Red;
+                printf("Red turn\n");
+                fflush(stdout);
+              }
             }
             break;
         }
