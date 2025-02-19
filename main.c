@@ -98,8 +98,10 @@ void update_game_state(Game* game, int8_t new_position) {
   }
   
   // Return if a vertical triplet is found
-  if (vertical_match != 0) game->state = (BoardState) vertical_match;
-  return;
+  if (vertical_match != 0) {
+    game->state = (BoardState) vertical_match;
+    return;
+  }
 
   // Check horizontally
   int8_t horizontal_match = game->board[3 * y]; 
@@ -108,8 +110,10 @@ void update_game_state(Game* game, int8_t new_position) {
   }
 
   // Return if a horizontal triplet is found
-  if (horizontal_match != 0) game->state = (BoardState) horizontal_match;
-  return;
+  if (horizontal_match != 0) {
+    game->state = (BoardState) horizontal_match;
+    return;
+  }
 
   // Check diagonally (0-indexed row-major `new_position` modulo 2 gives the pattern we are looking for; draw it)
   // Also equivalent to binary operation `new_position & 1`
@@ -121,8 +125,10 @@ void update_game_state(Game* game, int8_t new_position) {
       for (int i = 4; i <= 3 * 2; i += 2) {
         if (diagonal_match != game->board[i]) diagonal_match = 0;
       }
-      if (diagonal_match != 0) game->state = (BoardState) diagonal_match;
-      return;
+      if (diagonal_match != 0) {
+        game->state = (BoardState) diagonal_match;
+        return;
+      }
     }
     
     // Top-left to bottom-right
@@ -131,8 +137,10 @@ void update_game_state(Game* game, int8_t new_position) {
       for (int i = 4; i < 3 * 4; i += 4) {
         if (diagonal_match != game->board[i]) diagonal_match = 0;    
       }
-      if (diagonal_match != 0) game->state = (BoardState) diagonal_match;
-      return;
+      if (diagonal_match != 0) {
+        game->state = (BoardState) diagonal_match;
+        return;
+      }
     }
   }
 
