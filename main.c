@@ -122,27 +122,32 @@ void update_game_state(Game *game, int8_t new_position)
     return;
   }
 
-  // Improved diagonal checks
-
-  // Top-left to bottom-right
-  if (new_position % 4 == 0)
-  {
-    int8_t match = game->board[0];
-    if (match != 0 && match == game->board[4] && match == game->board[8])
-    {
-      game->state = (BoardState)match;
-      return;
+  // Check diagonally (0-indexed row-major `new_position` modulo 2 gives the pattern we are looking for; draw it)
+  // Also equivalent to binary operation `new_position & 1`
+  if (new_position % 2 == 0) {
+    int8_t diagonal_match = game->board[2];
+    
+    // Top-right to bottom-left
+    if (new_position % 2 == 0 && new_position % 8 != 0) {
+      for (int i = 4; i <= 3 * 2; i += 2) {
+        if (diagonal_match != game->board[i]) diagonal_match = 0;
+      }
+      if (diagonal_match != 0) {
+        game->state = (BoardState) diagonal_match;
+        return;
+      }
     }
-  }
-
-  // Top-right to bottom-left
-  if (new_position % 2 == 0 && new_position != 0 && new_position != 8)
-  {
-    int8_t match = game->board[2];
-    if (match != 0 && match == game->board[4] && match == game->board[6])
-    {
-      game->state = (BoardState)match;
-      return;
+    
+    // Top-left to bottom-right
+    if (new_position % 4 == 0) {
+      diagonal_match = game->board[0];
+      for (int i = 4; i < 3 * 4; i += 4) {
+        if (diagonal_match != game->board[i]) diagonal_match = 0;    
+      }
+      if (diagonal_match != 0) {
+        game->state = (BoardState) diagonal_match;
+        return;
+      }
     }
   }
 
